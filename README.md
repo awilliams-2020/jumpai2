@@ -1,36 +1,82 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Advisor Scheduling Platform
 
-## Getting Started
+A Calendly-like scheduling tool for advisors to meet with their clients, built with React, Golang, and PostgreSQL.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- Google Calendar integration with OAuth
+- Multiple Google Calendar account support
+- HubSpot CRM integration
+- Customizable scheduling windows
+- Configurable scheduling links with:
+  - Usage limits
+  - Expiration dates
+  - Custom forms
+  - Meeting duration settings
+  - Advance scheduling limits
+- LinkedIn profile scraping
+- AI-powered context augmentation for meeting notes
+- Email notifications
+
+## Tech Stack
+
+- Frontend: React with TypeScript
+- Backend: Golang
+- Database: PostgreSQL
+- Authentication: Google OAuth
+- External Integrations: Google Calendar API, HubSpot API, LinkedIn
+
+## Project Structure
+
+```
+.
+├── frontend/           # React frontend application
+├── backend/           # Golang backend application
+├── docker/           # Docker configuration files
+└── docs/             # Documentation
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Setup Instructions
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Prerequisites
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- Node.js 18+
+- Go 1.21+
+- PostgreSQL 15+
+- Docker and Docker Compose
 
-## Learn More
+### Development Setup
 
-To learn more about Next.js, take a look at the following resources:
+1. Clone the repository
+2. Set up environment variables:
+   - Copy `.env.example` to `.env` in both frontend and backend directories
+   - Fill in the required API keys and configuration
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. Start the development environment:
+   ```bash
+   docker-compose up -d
+   ```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+4. Install frontend dependencies:
+   ```bash
+   cd frontend
+   npm install
+   ```
 
-## Deploy on Vercel
+5. Install backend dependencies:
+   ```bash
+   cd backend
+   go mod download
+   ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+6. Start the development servers:
+   - Frontend: `npm run dev`
+   - Backend: `go run main.go`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## API Documentation
+
+API documentation is available at `/api/docs` when running the backend server.
+
+## License
+
+MIT 

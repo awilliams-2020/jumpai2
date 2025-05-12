@@ -1,0 +1,54 @@
+services:
+  mariadb:
+    image: mariadb:latest
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: advisor_scheduling
+      MYSQL_USER: advisor
+    volumes:
+      - mariadb_data:/var/lib/mysql
+      - ./backend/db/init.mariadb.sql:/docker-entrypoint-initdb.d/init.sql
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    environment:
+      - VITE_API_URL=
+      - PORT=
+    depends_on:
+      - backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+    environment:
+      - DB_HOST=mariadb
+      - DB_USER=root
+      - DB_PASSWORD=password
+      - DB_NAME=advisor_scheduling
+      - DB_PORT=3306
+      - FRONTEND_URL=
+      - GOOGLE_REDIRECT_URL=
+      - GOOGLE_CONNECT_REDIRECT_URL=
+      - GOOGLE_CLIENT_ID=
+      - GOOGLE_CLIENT_SECRET=
+      - HUBSPOT_CLIENT_ID=
+      - HUBSPOT_CLIENT_SECRET=
+      - HUBSPOT_REDIRECT_URL=
+      - HUBSPOT_ACCESS_TOKEN=
+      - JWT_SECRET=
+      - SENDGRID_API_KEY=
+      - SENDGRID_FROM_EMAIL=
+      - SENDGRID_FROM_NAME=
+      - OPENAI_API_KEY=
+    depends_on:
+      - mariadb
+volumes:
+  mariadb_data: 
