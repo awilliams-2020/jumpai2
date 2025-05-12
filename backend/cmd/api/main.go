@@ -56,6 +56,9 @@ func main() {
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})
+	router.GET("/scheduling/links/:id/public", schedulingHandler.GetPublicSchedulingLink)
+	router.GET("/scheduling/links/:id/slots/public", schedulingHandler.GetPublicAvailableSlots)
+	router.POST("/scheduling/links/:id/meetings/public", schedulingHandler.CreatePublicMeeting)
 
 	// Protected routes
 	protected := router.Group("/api")
@@ -69,7 +72,6 @@ func main() {
 			scheduling.GET("/links/:id", schedulingHandler.GetSchedulingLink)
 			scheduling.GET("/links/:id/slots", schedulingHandler.GetAvailableSlots)
 			scheduling.GET("/links/:id/meetings", schedulingHandler.GetLinkMeetings)
-			scheduling.POST("/links/:id/meetings", schedulingHandler.CreateMeeting)
 			scheduling.POST("/windows", schedulingHandler.CreateSchedulingWindow)
 			scheduling.GET("/windows", schedulingHandler.GetSchedulingWindows)
 			scheduling.DELETE("/windows/:id", schedulingHandler.DeleteSchedulingWindow)

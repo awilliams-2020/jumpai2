@@ -174,7 +174,7 @@ func (h *HubSpotHandler) HubSpotConnectCallback(c *gin.Context) {
 		existingAccount.AccessToken = hubspotToken.AccessToken
 		existingAccount.RefreshToken = hubspotToken.RefreshToken
 		existingAccount.TokenExpiry = time.Now().Add(time.Duration(userInfo.ExpiresIn) * time.Second)
-		existingAccount.LastSyncedAt = time.Now()
+		existingAccount.LastSyncAt = time.Now()
 		if err := h.db.Save(&existingAccount).Error; err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update existing account"})
 			return
@@ -193,7 +193,7 @@ func (h *HubSpotHandler) HubSpotConnectCallback(c *gin.Context) {
 			RefreshToken:   hubspotToken.RefreshToken,
 			TokenExpiry:    time.Now().Add(time.Duration(userInfo.ExpiresIn) * time.Second),
 			IsActive:       true,
-			LastSyncedAt:   time.Now(),
+			LastSyncAt:     time.Now(),
 			HubTimezone:    userInfo.HubTimezone,
 		}
 

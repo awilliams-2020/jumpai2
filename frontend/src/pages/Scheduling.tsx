@@ -75,7 +75,7 @@ export default function Scheduling() {
 	useEffect(() => {
 		const fetchLink = async () => {
 			try {
-				const response = await client.get(`/api/scheduling/links/${id}`);
+				const response = await client.get(`/scheduling/links/${id}/public`);
 				setLink(response.data);
 				// Initialize answers object with empty strings for each question
 				const initialAnswers = response.data.custom_questions.reduce((acc: { [key: string]: string }, question: string) => {
@@ -130,7 +130,7 @@ export default function Scheduling() {
 		setError(null);
 
 		try {
-			await client.post(`/api/scheduling/links/${id}/meetings`, {
+			await client.post(`/scheduling/links/${id}/meetings/public`, {
 				client_email: formData.email,
 				linkedin_url: formData.linkedin_url,
 				start_time: selectedSlot.start,

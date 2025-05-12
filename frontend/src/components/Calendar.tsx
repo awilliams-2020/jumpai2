@@ -36,7 +36,7 @@ export default function Calendar({ onSlotSelect, selectedSlot, linkId, duration 
 		setLoading(true);
 		setError(null);
 		try {
-			const response = await client.get(`/api/scheduling/links/${linkId}/slots`, {
+			const response = await client.get(`/scheduling/links/${linkId}/slots/public`, {
 				params: {
 					date: format(date, 'yyyy-MM-dd'),
 				},

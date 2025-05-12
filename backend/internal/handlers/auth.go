@@ -97,7 +97,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 				Name:          userInfo.Name,
 				ProfilePicture: userInfo.Picture,
 				GoogleID:      userInfo.ID,
-				HubspotID:     nil,
+				HubspotID:     "",
 				IsActive:      true,
 				LastLoginAt:   time.Now(),
 			}
@@ -227,7 +227,7 @@ func (h *GoogleHandler) ConnectGoogleAccountCallback(c *gin.Context) {
 		existingAccount.AccessToken = googleToken.AccessToken
 		existingAccount.RefreshToken = googleToken.RefreshToken
 		existingAccount.TokenExpiry = googleToken.Expiry
-		existingAccount.LastSyncedAt = time.Now()
+		existingAccount.LastSyncAt = time.Now()
 		existingAccount.IsActive = true
 		existingAccount.ProfilePicture = userInfo.Picture
 		existingAccount.Name = userInfo.Name
@@ -249,7 +249,7 @@ func (h *GoogleHandler) ConnectGoogleAccountCallback(c *gin.Context) {
 			TokenExpiry:    googleToken.Expiry,
 			CalendarIDs:    models.StringSlice{"primary"}, // Default to primary calendar
 			IsActive:       true,
-			LastSyncedAt:   time.Now(),
+			LastSyncAt:     time.Now(),
 			ProfilePicture: userInfo.Picture,
 			Name:           userInfo.Name,
 		}

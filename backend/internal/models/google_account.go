@@ -43,15 +43,23 @@ func (s *StringSlice) Scan(value interface{}) error {
 // GoogleAccount represents a connected Google account
 type GoogleAccount struct {
 	gorm.Model
-	UserID         uint        `gorm:"not null" json:"user_id"`
-	GoogleID       string      `gorm:"not null" json:"google_id"`
-	Email          string      `gorm:"not null" json:"email"`
-	AccessToken    string      `gorm:"not null" json:"access_token"`
-	RefreshToken   string      `gorm:"not null" json:"refresh_token"`
-	TokenExpiry    time.Time   `gorm:"not null" json:"token_expiry"`
-	CalendarIDs    StringSlice `gorm:"type:json" json:"calendar_ids"`
-	IsActive       bool        `gorm:"default:true" json:"is_active"`
-	LastSyncedAt   time.Time   `json:"last_synced_at"`
-	ProfilePicture string      `json:"profile_picture"`
+	UserID         uint        `json:"user_id" gorm:"not null"`
+	GoogleID       string      `json:"google_id" gorm:"unique;not null"`
+	Email          string      `json:"email" gorm:"unique;not null"`
+	AccessToken    string      `json:"-" gorm:"not null"` // OAuth access token
+	RefreshToken   string      `json:"-" gorm:"not null"` // OAuth refresh token
+	TokenExpiry    time.Time   `json:"token_expiry" gorm:"not null"`
+	CalendarIDs    StringSlice `json:"calendar_ids" gorm:"type:json"`
+	IsActive       bool        `json:"is_active" gorm:"default:true"`
+	LastSyncAt     time.Time   `json:"last_sync_at"`
+	ProfilePicture string      `json:"profile_picture" gorm:"type:text"`
 	Name           string      `json:"name"`
+	
+	// Relationships
+	User User `json:"user" gorm:"foreignKey:UserID"`
+}
+
+// TableName specifies the table name for the GoogleAccount model
+func (GoogleAccount) TableName() string {
+	return "google_accounts"
 } 

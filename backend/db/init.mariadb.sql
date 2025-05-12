@@ -11,6 +11,8 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL DEFAULT NULL,
     email VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    profile_picture TEXT,
     google_id VARCHAR(255) UNIQUE,
     hubspot_id VARCHAR(255) UNIQUE,
     access_token TEXT,
@@ -87,6 +89,54 @@ CREATE TABLE meetings (
     CONSTRAINT valid_time_range CHECK (start_time < end_time)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Create google_accounts table
+CREATE TABLE google_accounts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    google_id VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    token_expiry TIMESTAMP NOT NULL,
+    calendar_ids JSON,
+    is_active BOOLEAN DEFAULT TRUE,
+    last_sync_at TIMESTAMP NULL DEFAULT NULL,
+    profile_picture TEXT,
+    name VARCHAR(255),
+    CONSTRAINT fk_google_accounts_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE,
+    UNIQUE KEY unique_google_id (google_id),
+    UNIQUE KEY unique_google_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Create hubspot_accounts table
+CREATE TABLE hubspot_accounts (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    deleted_at TIMESTAMP NULL DEFAULT NULL,
+    user_id BIGINT UNSIGNED NOT NULL,
+    hub_id VARCHAR(255) NOT NULL,
+    hub_name VARCHAR(255) NOT NULL,
+    hub_domain VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL,
+    access_token TEXT NOT NULL,
+    refresh_token TEXT NOT NULL,
+    token_expiry TIMESTAMP NOT NULL,
+    hub_timezone VARCHAR(100) NOT NULL,
+    last_sync_at TIMESTAMP NULL DEFAULT NULL,
+    is_active BOOLEAN DEFAULT TRUE,
+    CONSTRAINT fk_hubspot_accounts_user
+        FOREIGN KEY (user_id) REFERENCES users(id)
+        ON DELETE CASCADE,
+    UNIQUE KEY unique_hub_id (hub_id),
+    UNIQUE KEY unique_hubspot_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Create indexes
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_google_id ON users(google_id);
@@ -96,6 +146,12 @@ CREATE INDEX idx_scheduling_links_user_id ON scheduling_links(user_id);
 CREATE INDEX idx_meetings_scheduling_link_id ON meetings(scheduling_link_id);
 CREATE INDEX idx_meetings_user_id ON meetings(user_id);
 CREATE INDEX idx_meetings_start_time ON meetings(start_time);
+CREATE INDEX idx_google_accounts_user_id ON google_accounts(user_id);
+CREATE INDEX idx_google_accounts_google_id ON google_accounts(google_id);
+CREATE INDEX idx_google_accounts_email ON google_accounts(email);
+CREATE INDEX idx_hubspot_accounts_user_id ON hubspot_accounts(user_id);
+CREATE INDEX idx_hubspot_accounts_hub_id ON hubspot_accounts(hub_id);
+CREATE INDEX idx_hubspot_accounts_email ON hubspot_accounts(email);
 
 -- Create stored procedure for soft delete
 DELIMITER //

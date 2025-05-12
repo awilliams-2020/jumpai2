@@ -329,8 +329,200 @@ func (h *SchedulingHandler) DeleteSchedulingWindow(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Scheduling window deleted successfully"})
 }
 
-// CreateMeeting creates a new meeting and updates the scheduling link's max uses
-func (h *SchedulingHandler) CreateMeeting(c *gin.Context) {
+// GetLinkMeetings retrieves all meetings for a specific scheduling link
+func (h *SchedulingHandler) GetLinkMeetings(c *gin.Context) {
+	linkID := c.Param("id")
+	var meetings []models.Meeting
+
+	if err := h.db.Where("scheduling_link_id = ?", linkID).Find(&meetings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch meetings"})
+		return
+	}
+
+	// Convert meetings to response format
+	response := make([]gin.H, len(meetings))
+	for i, meeting := range meetings {
+		response[i] = gin.H{
+			"id":            meeting.ID,
+			"client_email":  meeting.ClientEmail,
+			"linkedin_url":  meeting.LinkedInURL,
+			"start_time":    meeting.StartTime,
+			"end_time":      meeting.EndTime,
+			"answers":       meeting.Answers,
+			"context_notes": meeting.ContextNotes,
+		}
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
+// GetPublicSchedulingLink retrieves a scheduling link by ID without requiring authentication
+func (h *SchedulingHandler) GetPublicSchedulingLink(c *gin.Context) {
+	id := c.Param("id")
+	var link models.SchedulingLink
+
+	if err := h.db.First(&link, id).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Scheduling link not found"})
+		return
+	}
+
+	// Check if link is still active
+	if !link.IsActive {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This scheduling link is no longer active"})
+		return
+	}
+
+	// Check if link has expired
+	if link.ExpiresAt != nil && time.Now().After(*link.ExpiresAt) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This scheduling link has expired"})
+		return
+	}
+
+	// Check max uses
+	if link.MaxUses != nil {
+		var totalMeetings int64
+		h.db.Model(&models.Meeting{}).Where("scheduling_link_id = ?", link.ID).Count(&totalMeetings)
+		if int(totalMeetings) >= *link.MaxUses {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "This scheduling link has reached its maximum number of uses"})
+			return
+		}
+	}
+
+	// Parse custom questions from JSON string
+	var customQuestions []string
+	if link.CustomQuestions != "" {
+		if err := json.Unmarshal([]byte(link.CustomQuestions), &customQuestions); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to process custom questions"})
+			return
+		}
+	}
+
+	// Get user info for the link owner
+	var user models.User
+	if err := h.db.First(&user, link.UserID).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user information"})
+		return
+	}
+
+	// Return response in snake_case format
+	c.JSON(http.StatusOK, gin.H{
+		"id":                  link.ID,
+		"title":              link.Title,
+		"duration":           link.Duration,
+		"max_uses":           link.MaxUses,
+		"expires_at":         link.ExpiresAt,
+		"max_days_in_advance": link.MaxDaysInAdvance,
+		"custom_questions":   customQuestions,
+		"is_active":          link.IsActive,
+		"user": gin.H{
+			"name":           user.Name,
+			"profile_picture": user.ProfilePicture,
+		},
+	})
+}
+
+// GetPublicAvailableSlots retrieves available time slots for a scheduling link without requiring authentication
+func (h *SchedulingHandler) GetPublicAvailableSlots(c *gin.Context) {
+	linkID := c.Param("id")
+	var link models.SchedulingLink
+
+	if err := h.db.First(&link, linkID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Scheduling link not found"})
+		return
+	}
+
+	// Check if link is still active
+	if !link.IsActive {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This scheduling link is no longer active"})
+		return
+	}
+
+	// Check if link has expired
+	if link.ExpiresAt != nil && time.Now().After(*link.ExpiresAt) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "This scheduling link has expired"})
+		return
+	}
+
+	// Check max uses
+	if link.MaxUses != nil {
+		var totalMeetings int64
+		h.db.Model(&models.Meeting{}).Where("scheduling_link_id = ?", link.ID).Count(&totalMeetings)
+		if int(totalMeetings) >= *link.MaxUses {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "This scheduling link has reached its maximum number of uses"})
+			return
+		}
+	}
+
+	// Parse date from query param
+	dateStr := c.Query("date")
+	if dateStr == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Missing date parameter (expected format: yyyy-mm-dd)"})
+		return
+	}
+	selectedDate, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid date format (expected: yyyy-mm-dd)"})
+		return
+	}
+
+	// Check max days in advance
+	today := time.Now().Truncate(24 * time.Hour)
+	maxDate := today.AddDate(0, 0, link.MaxDaysInAdvance)
+	if selectedDate.After(maxDate) {
+		c.JSON(http.StatusOK, []gin.H{})
+		return
+	}
+
+	// Get user's scheduling windows for the selected weekday
+	var windows []models.SchedulingWindow
+	if err := h.db.Where("user_id = ? AND is_active = ? AND weekday = ?", link.UserID, true, int(selectedDate.Weekday())).Find(&windows).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch scheduling windows"})
+		return
+	}
+	if len(windows) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "No active scheduling windows found for this day"})
+		return
+	}
+
+	// Get existing meetings for this link on the selected date
+	var meetings []models.Meeting
+	startOfDay := time.Date(selectedDate.Year(), selectedDate.Month(), selectedDate.Day(), 0, 0, 0, 0, selectedDate.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+	if err := h.db.Where("scheduling_link_id = ? AND start_time >= ? AND start_time < ?", link.ID, startOfDay, endOfDay).Find(&meetings).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch meetings"})
+		return
+	}
+
+	// Build a list of all possible slots for the day
+	slots := []gin.H{}
+	meetingDuration := time.Duration(link.Duration) * time.Minute
+	for _, window := range windows {
+		windowStart := time.Date(selectedDate.Year(), selectedDate.Month(), selectedDate.Day(), window.StartHour, 0, 0, 0, selectedDate.Location())
+		windowEnd := time.Date(selectedDate.Year(), selectedDate.Month(), selectedDate.Day(), window.EndHour, 0, 0, 0, selectedDate.Location())
+		for slotStart := windowStart; slotStart.Add(meetingDuration).UTC().Before(windowEnd.UTC()) || slotStart.Add(meetingDuration).UTC().Equal(windowEnd.UTC()); slotStart = slotStart.Add(meetingDuration) {
+			slotEnd := slotStart.Add(meetingDuration)
+			// Check for overlap with existing meetings
+			overlaps := false
+			for _, meeting := range meetings {
+				if (slotStart.Before(meeting.EndTime) && slotEnd.After(meeting.StartTime)) || slotStart.Equal(meeting.StartTime) {
+					overlaps = true
+					break
+				}
+			}
+			if !overlaps && slotStart.After(time.Now()) {
+				slots = append(slots, gin.H{
+					"start": slotStart.UTC().Format(time.RFC3339),
+					"end":   slotEnd.UTC().Format(time.RFC3339),
+				})
+			}
+		}
+	}
+
+	c.JSON(http.StatusOK, slots)
+}
+
+// CreatePublicMeeting creates a new meeting without requiring authentication
+func (h *SchedulingHandler) CreatePublicMeeting(c *gin.Context) {
 	linkID := c.Param("id")
 	var link models.SchedulingLink
 
@@ -471,31 +663,4 @@ func (h *SchedulingHandler) CreateMeeting(c *gin.Context) {
 		"end_time":      meeting.EndTime,
 		"answers":       input.Answers,
 	})
-}
-
-// GetLinkMeetings retrieves all meetings for a specific scheduling link
-func (h *SchedulingHandler) GetLinkMeetings(c *gin.Context) {
-	linkID := c.Param("id")
-	var meetings []models.Meeting
-
-	if err := h.db.Where("scheduling_link_id = ?", linkID).Find(&meetings).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch meetings"})
-		return
-	}
-
-	// Convert meetings to response format
-	response := make([]gin.H, len(meetings))
-	for i, meeting := range meetings {
-		response[i] = gin.H{
-			"id":            meeting.ID,
-			"client_email":  meeting.ClientEmail,
-			"linkedin_url":  meeting.LinkedInURL,
-			"start_time":    meeting.StartTime,
-			"end_time":      meeting.EndTime,
-			"answers":       meeting.Answers,
-			"context_notes": meeting.ContextNotes,
-		}
-	}
-
-	c.JSON(http.StatusOK, response)
 }

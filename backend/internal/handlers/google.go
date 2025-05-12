@@ -66,7 +66,7 @@ func (h *GoogleHandler) GetGoogleAccounts(c *gin.Context) {
 			"name":            account.Name,
 			"profile_picture": account.ProfilePicture,
 			"is_active":       account.IsActive,
-			"last_synced_at":  account.LastSyncedAt,
+			"last_sync_at":    account.LastSyncAt,
 			"calendar_ids":    account.CalendarIDs,
 		}
 	}

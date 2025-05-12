@@ -6,20 +6,32 @@ import (
 	"gorm.io/gorm"
 )
 
+// User represents a user in the system
 type User struct {
 	gorm.Model
 	Email          string    `json:"email" gorm:"unique;not null"`
 	Name           string    `json:"name" gorm:"not null"`
 	ProfilePicture string    `json:"profile_picture" gorm:"type:text"`
 	GoogleID       string    `json:"google_id" gorm:"unique"`
-	HubspotID      *string   `json:"hubspot_id" gorm:"uniqueIndex;default:null"`
+	HubspotID      string    `json:"hubspot_id" gorm:"unique"`
 	AccessToken    string    `json:"-" gorm:"type:text"`
 	RefreshToken   string    `json:"-" gorm:"type:text"`
 	TokenExpiry    time.Time `json:"-"`
 	CalendarIDs    []string  `json:"calendar_ids" gorm:"type:json"`
 	LastLoginAt    time.Time `json:"last_login_at"`
 	IsActive       bool      `json:"is_active" gorm:"default:true"`
-	GoogleAccounts []GoogleAccount `json:"google_accounts" gorm:"foreignKey:UserID"`
+	
+	// Relationships
+	GoogleAccounts    []GoogleAccount    `json:"google_accounts" gorm:"foreignKey:UserID"`
+	HubspotAccounts   []HubSpotAccount   `json:"hubspot_accounts" gorm:"foreignKey:UserID"`
+	SchedulingWindows []SchedulingWindow `json:"scheduling_windows" gorm:"foreignKey:UserID"`
+	SchedulingLinks   []SchedulingLink   `json:"scheduling_links" gorm:"foreignKey:UserID"`
+	Meetings          []Meeting          `json:"meetings" gorm:"foreignKey:UserID"`
+}
+
+// TableName specifies the table name for the User model
+func (User) TableName() string {
+	return "users"
 }
 
 type SchedulingWindow struct {
