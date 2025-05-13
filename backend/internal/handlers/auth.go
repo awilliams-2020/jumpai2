@@ -97,7 +97,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 				Name:          userInfo.Name,
 				ProfilePicture: userInfo.Picture,
 				GoogleID:      userInfo.ID,
-				HubspotID:     "",
+				HubspotID:     nil,
 				IsActive:      true,
 				LastLoginAt:   time.Now(),
 			}

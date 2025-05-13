@@ -14,7 +14,7 @@ CREATE TABLE users (
     name VARCHAR(255) NOT NULL,
     profile_picture TEXT,
     google_id VARCHAR(255) UNIQUE,
-    hubspot_id VARCHAR(255) UNIQUE,
+    hubspot_id VARCHAR(255) UNIQUE NULL,
     access_token TEXT,
     refresh_token TEXT,
     token_expiry TIMESTAMP NULL DEFAULT NULL,

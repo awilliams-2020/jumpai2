@@ -13,7 +13,7 @@ type User struct {
 	Name           string    `json:"name" gorm:"not null"`
 	ProfilePicture string    `json:"profile_picture" gorm:"type:text"`
 	GoogleID       string    `json:"google_id" gorm:"unique"`
-	HubspotID      string    `json:"hubspot_id" gorm:"unique"`
+	HubspotID      *string   `json:"hubspot_id" gorm:"unique"`
 	AccessToken    string    `json:"-" gorm:"type:text"`
 	RefreshToken   string    `json:"-" gorm:"type:text"`
 	TokenExpiry    time.Time `json:"-"`
